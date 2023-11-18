@@ -38,12 +38,61 @@ def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
     return metric(y_te,y_pr)
 
 def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric):
+    """
+    :param X_tr: The train dataset as an numpy array
+    :param y_tr: The train label predictions as numpy array
+    :param X_te: The train dataset as an numpy array
+    :param y_te: The train label predictions as numpy array
+    :param population: a # chromosomes x # genes numpy array of 0s and 1s , where a row is np.array([1.0,0.0,...,1.0])
+    :param model: scikit learn estimator
+    :param model: scikit learn metric that accepts (y_true,y_predicted)
+    :return:
+    """
     n_chromosomes,n_genes = population.shape
     scores = np.empty((n_chromosomes,),dtype=float)
+
     for n in range(n_chromosomes):
         scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric)
 
     return scores
+
+def chromosome_selection(scores,population):
+    """
+    :param scores: The scores of each chromosome in the population
+    :param population: a # chromosomes x # genes numpy array of 0s and 1s , where a row is np.array([1.0,0.0,...,1.0])
+    :return:
+    """
+    n_chromosomes,n_genes = population.shape
+    top_scores_idx = np.argsort(scores)[::-1]
+
+    return population[top_scores_idx[:n_chromosomes//2]]
+
+
+def generate_next_population(scores,population,crossover_method="onepoint",mutation_rate=0.1):
+    # select fittest chromosomes in the population
+    chromosome_fittest = chromosome_selection(scores,population)
+
+    # cross over
+    chromosome_cross = crossover_population(chromosome_fittest,crossover_method)
+
+    # mutation
+    chromosome_mutate = mutation(chromosome_cross,mutation_rate)
+
+    # create new population
+    n_chromosomes,n_genes = chromosome_fittest.shape
+
+    population_random = generate_population(n_chromosomes,n_genes)
+
+    return np.vstack((chromosome_cross,chromosome_mutate,population_random))
+
+
+def select_metric(metric_choice):
+    if metric_choice == "accuracy":
+        return accuracy_score
+    elif metric_choice == "f1":
+        return f1_score
+    elif metric_choice == "roc_auc_score":
+        return roc_auc_score
 
 if __name__ == "__main__":
     n_genes = 10
