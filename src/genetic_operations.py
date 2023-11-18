@@ -46,11 +46,11 @@ def crossover_population(population,size=None,method="onepoint"):
     # if the population is an even number, crossover is no problem (every other pair crossed)
 
     # TODO: find faster way of this perhaps...
-    crossover_enumerations = list(itertools.permutations(np.arange(n_chromosomes),2))
-    np.random.shuffle(crossover_enumerations)
-    pop1idx, pop2idx = zip(*crossover_enumerations[:(size)])
-    # pop1idx = np.random.choice(n_chromosomes,size=size)
-    # pop2idx = np.random.choice(n_chromosomes,size=size)
+    # crossover_enumerations = list(itertools.permutations(np.arange(n_chromosomes),2))
+    # np.random.shuffle(crossover_enumerations)
+    # pop1idx, pop2idx = zip(*crossover_enumerations[:(size)])
+    pop1idx = np.random.randint(0,n_chromosomes,size=size)
+    pop2idx = np.random.randint(0,n_chromosomes,size=size)
 
     #
     # if n_chromosomes % 2 == 0:
