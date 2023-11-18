@@ -82,12 +82,12 @@ def generate_next_population(scores,population,crossover_method="onepoint",mutat
     chromosome_fittest = chromosome_selection(scores,population)
 
     # cross over RANDOMLY!!!
-    chromosome_cross = crossover_population(chromosome_fittest,n_chromosomes-elitism,crossover_method)
+    chromosome_cross = crossover_population(chromosome_fittest,n_chromosomes//2-elitism,crossover_method)
 
     # mutation
-    chromosome_mutate = mutation(chromosome_cross,mutation_rate)
+    chromosome_mutate = mutation(chromosome_fittest,mutation_rate)
 
-    return np.vstack((chromosome_fittest[:elitism,:],chromosome_mutate))
+    return np.vstack((chromosome_fittest[:elitism,:],chromosome_cross,chromosome_mutate))
 
 
 def select_metric(metric_choice):
