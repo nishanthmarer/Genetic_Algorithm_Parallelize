@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
+from time import time
 
 
 from sklearn.linear_model import LogisticRegression
@@ -36,16 +37,25 @@ def main(args):
 
     population = generate_population(args.population_size,n_genes)
 
-    for evo in np.arange(args.evolution_rounds):
-        scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                           population,LogisticRegression,metric,verbose=True)
+    clf = LogisticRegression(n_jobs=-2,random_state=123)
+    clf.fit(X_tr,y_tr)
+    y_pr = clf.predict(X_te)
+    baseline_metric = metric(y_te,y_pr)
 
-        print("Generation {:3d} \t Population Size={} \t Score={:.3f}".format(evo,population.shape,np.max(scores)))
+    print("Baseline Fit Score={:.3f}".format(baseline_metric))
+    print()
+    print("Genetic Algorithm Evolution")
+    for evo in np.arange(args.evolution_rounds):
+
+        start_time = time()
+        scores = fitness_population(X_tr,y_tr,X_te,y_te,
+                           population,LogisticRegression,metric,verbose=False)
 
         population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
+        end_time = time()
+        total_time = end_time-start_time
 
-        if population.shape[0] < 2:
-            break
+        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2}s".format(evo,population.shape,np.max(scores),total_time))
 
 
 
