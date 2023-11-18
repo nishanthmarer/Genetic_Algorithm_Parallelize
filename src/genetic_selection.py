@@ -3,6 +3,9 @@ def warn(*args, **kwargs):
 import warnings
 warnings.warn = warn
 
+from sklearnex import patch_sklearn
+patch_sklearn()
+
 from src.genetic_operations import mutation,crossover,crossover_population,generate_population
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -32,12 +35,12 @@ def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
     # reshape chromosome incase it has wrong dimension...
     X_tr_subset = data_chromosome_subset(X_tr,chromosome)
     X_te_subset = data_chromosome_subset(X_te,chromosome)
-    clf = model(random_state=123)
+    clf = model(random_state=123,n_jobs=-2)
     clf.fit(X_tr_subset,y_tr)
     y_pr = clf.predict(X_te_subset)
     return metric(y_te,y_pr)
 
-def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric):
+def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False):
     """
     :param X_tr: The train dataset as an numpy array
     :param y_tr: The train label predictions as numpy array
@@ -51,7 +54,12 @@ def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric):
     n_chromosomes,n_genes = population.shape
     scores = np.empty((n_chromosomes,),dtype=float)
 
-    for n in range(n_chromosomes):
+    if verbose:
+        slice = tqdm(range(n_chromosomes))
+    else:
+        slice = range(n_chromosomes)
+
+    for n in slice:
         scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric)
 
     return scores
@@ -68,22 +76,18 @@ def chromosome_selection(scores,population):
     return population[top_scores_idx[:n_chromosomes//2]]
 
 
-def generate_next_population(scores,population,crossover_method="onepoint",mutation_rate=0.1):
+def generate_next_population(scores,population,crossover_method="onepoint",mutation_rate=0.1,elitism=2):
+    n_chromosomes,n_genes = population.shape
     # select fittest chromosomes in the population
     chromosome_fittest = chromosome_selection(scores,population)
 
-    # cross over
-    chromosome_cross = crossover_population(chromosome_fittest,crossover_method)
+    # cross over RANDOMLY!!!
+    chromosome_cross = crossover_population(chromosome_fittest,n_chromosomes-elitism,crossover_method)
 
     # mutation
     chromosome_mutate = mutation(chromosome_cross,mutation_rate)
 
-    # create new population
-    n_chromosomes,n_genes = chromosome_fittest.shape
-
-    population_random = generate_population(n_chromosomes,n_genes)
-
-    return np.vstack((chromosome_cross,chromosome_mutate,population_random))
+    return np.vstack((chromosome_fittest[:elitism,:],chromosome_mutate))
 
 
 def select_metric(metric_choice):

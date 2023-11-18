@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import itertools
 
 def generate_population(n_chromosomes,n_genes):
     """
@@ -31,11 +32,31 @@ def crossover(population1,population2,method="onepoint"):
 
     return chromosomes_crossed
 
-def crossover_population(population,method="onepoint"):
-    population1 = population[::2]
-    population2 = population[1::2]
+def crossover_population(population,size=None,method="onepoint"):
+    n_chromosomes,n_genes = population.shape
 
-    return crossover(population1,population2,method=method)
+    assert size is not None, "Cannot have no size for population!!!"
+    # if the population is an even number, crossover is no problem (every other pair crossed)
+
+    crossover_enumerations = list(itertools.permutations(np.arange(n_chromosomes),2))
+    # TODO: find faster way of this perhaps...
+    np.random.shuffle(crossover_enumerations)
+    pop1idx, pop2idx = zip(*crossover_enumerations[:(size)])
+    #
+    # if n_chromosomes % 2 == 0:
+    #     population1 = population[::2]
+    #     population2 = population[1::2]
+    #     population_crossed = crossover(population1,population2,method=method)
+    # else:
+    #     population1 = population[:-1:2]
+    #     population2 = population[1:-1:2]
+    #     population_crossed = crossover(population1, population2, method=method)
+
+    population1 = population[pop1idx,:]
+    population2 = population[pop2idx,:]
+    population_crossed = crossover(population1,population2,method=method)
+
+    return population_crossed
 
 
 def mutation(population,mutation_rate):
@@ -58,7 +79,7 @@ def mutation(population,mutation_rate):
 
 if __name__ == "__main__":
     n_genes = 10
-    n_chromosomes = 10000
+    n_chromosomes = 10001
     chromosome1 = np.random.randint(0,2,(1,n_genes))
     chromosome2 = np.random.randint(0,2,(1,n_genes))
 
@@ -94,8 +115,11 @@ if __name__ == "__main__":
 
     population0 = generate_population(n_chromosomes,n_genes)
 
-    print("Unique Chromosomes: ",len(np.unique(population_0,axis=1)))
+    print("Unique Chromosomes: ",len(np.unique(population0,axis=1)))
     print("Population Dimensions: ",population0.shape)
+
+    populationC = crossover_population(population0, size=n_chromosomes,method="onepoint")
+    assert populationC.shape[0] == population0.shape[0]//2, "Population crossed number of chromosomes should work with odd amount"
 
     print('\n',''"="*10,"Check Chromosome Mutation","="*10)
     print("Chromsome1: ",chromosome1)

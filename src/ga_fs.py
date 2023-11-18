@@ -3,24 +3,32 @@ def warn(*args, **kwargs):
 import warnings
 warnings.warn = warn
 
-from genetic_selection import fitness_score,fitness_population,select_metric,chromosome_selection,generate_next_population
+from sklearnex import patch_sklearn
+patch_sklearn()
+
+from genetic_selection import fitness_population,select_metric,generate_next_population
+from src.genetic_operations import generate_population
 
 import argparse
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import random
 
-
-from src.genetic_operations import mutation,crossover,crossover_population,generate_population
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized
+from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized,fetch_openml
 from sklearn.model_selection import train_test_split
 
-import matplotlib.pyplot as plt
 
+
+random.seed(123)
+np.random.seed(123)
 
 def main(args):
-    X, y = fetch_20newsgroups_vectorized(return_X_y=True)
+    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False)
+    X = X.astype(float); y=y.astype(float)
+
     N,n_genes = X.shape
     X_tr,X_te,y_tr,y_te = train_test_split(X,y,test_size=0.2,stratify=y,random_state=123)
 
@@ -30,15 +38,14 @@ def main(args):
 
     for evo in np.arange(args.evolution_rounds):
         scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                           population,LogisticRegression,metric)
+                           population,LogisticRegression,metric,verbose=True)
 
-        print("Population {:3d} \t Score={:.3f}".format(evo,np.max(scores)))
+        print("Generation {:3d} \t Population Size={} \t Score={:.3f}".format(evo,population.shape,np.max(scores)))
 
-        population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate)
+        population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
 
-        print(population)
-
-
+        if population.shape[0] < 2:
+            break
 
 
 
@@ -46,13 +53,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--dataset', default=None,
+    parser.add_argument('--dataset', default="Bioresponse",
                         help='Dataset Name')
 
     parser.add_argument('--crossover_choice', type=str,default='onepoint',
                         help='Crossover options for chromosomes (onepoint,multipoint)')
 
-    parser.add_argument('--mutation_rate', type=float, default=0.5, help='Mutation rate for the chromosome')
+    parser.add_argument('--mutation_rate', type=float, default=0.2, help='Mutation rate for the chromosome')
 
 
     parser.add_argument('--metric_choice', type=str,default='accuracy',
@@ -60,7 +67,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--population_size', type=int, default=500, help='Number of chromosomes to search over')
 
-    parser.add_argument('--evolution_rounds', type=int, default=10, help='Number of evolution rounds to generate populations for')
+    parser.add_argument('--elitism', type=int, default=2, help='Number fittest chromosomes to keep each population round')
+
+
+    parser.add_argument('--evolution_rounds', type=int, default=15, help='Number of evolution rounds to generate populations for')
 
 
     parser.add_argument('--stopping_threshold', type=float, default=0.99,
