@@ -55,7 +55,7 @@ def main(args):
         end_time = time()
         total_time = end_time-start_time
 
-        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2}s".format(evo,population.shape,np.max(scores),total_time))
+        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
 
 
 
@@ -63,8 +63,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--dataset', default="Bioresponse",
-                        help='Dataset Name')
+    parser.add_argument('--dataset', default="gina_agnostic",
+                        help='Dataset Name (Bioresponse,gina_agnostic,...)')
 
     parser.add_argument('--crossover_choice', type=str,default='onepoint',
                         help='Crossover options for chromosomes (onepoint,multipoint)')
