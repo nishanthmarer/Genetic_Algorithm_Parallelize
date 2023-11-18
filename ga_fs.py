@@ -6,8 +6,12 @@ warnings.warn = warn
 from sklearnex import patch_sklearn
 patch_sklearn()
 
-from genetic_selection import fitness_population,select_metric,generate_next_population
+from src.genetic_selection import fitness_population,select_metric,generate_next_population
 from src.genetic_operations import generate_population
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized,fetch_openml
+from sklearn.model_selection import train_test_split
 
 import argparse
 import numpy as np
@@ -15,13 +19,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 from time import time
-
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized,fetch_openml
-from sklearn.model_selection import train_test_split
-
-
 
 random.seed(123)
 np.random.seed(123)
@@ -52,6 +49,19 @@ def main(args):
                            population,LogisticRegression,metric,verbose=False)
 
         population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
+        end_time = time()
+        total_time = end_time-start_time
+
+        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+
+    print("Random Feature Evolution")
+    for evo in np.arange(args.evolution_rounds):
+
+        start_time = time()
+        population = generate_population(args.population_size, n_genes)
+        scores = fitness_population(X_tr,y_tr,X_te,y_te,
+                           population,LogisticRegression,metric,verbose=False)
+
         end_time = time()
         total_time = end_time-start_time
 

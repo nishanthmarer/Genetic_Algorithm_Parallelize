@@ -7,12 +7,15 @@ from sklearnex import patch_sklearn
 patch_sklearn()
 
 from src.genetic_operations import mutation,crossover,crossover_population,generate_population
-import numpy as np
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score,accuracy_score,roc_auc_score
+
+import numpy as np
 from tqdm import tqdm
+
 def data_chromosome_subset(X,chromosome):
     """
     :param X: The dataset as an numpy array
