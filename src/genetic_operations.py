@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import itertools
+from iteration_utilities import random_combination
 
 def generate_population(n_chromosomes,n_genes):
     """
@@ -14,9 +15,9 @@ def generate_population(n_chromosomes,n_genes):
     return population
 def crossover(population1,population2,method="onepoint"):
     """
-
     :param population1: a population size x # genes numpy array of 0s and 1s. A row is np.array([1.0,0.0,...,1.0]) where 1 inidicates include feature from dataset
     :param population2: a population size x # genes numpy array of 0s and 1s. A row is np.array([1.0,0.0,...,1.0]) where 1 inidicates include feature from dataset
+    :param method: onepoint swaps the first half of a chromosome with the first half of another chromosome. multipoint interleaves the genes of chromosome 1 with chromosome 2
     :return: a 1xN numpy array of 0s and 1s where the first half of array is the first half of chromosome 1, and the second half of aarray is the second half of chromosome 2
     """
     # get number of genes in chromosome
@@ -33,15 +34,24 @@ def crossover(population1,population2,method="onepoint"):
     return chromosomes_crossed
 
 def crossover_population(population,size=None,method="onepoint"):
+    """
+    :param population: a # of chromosomes x # genes numpy array of 0s and 1s. A row is np.array([1.0,0.0,...,1.0]) where 1 inidicates include feature from dataset
+    :param size: the size that the cross over population should be
+    :param method: onepoint swaps the first half of a chromosome with the first half of another chromosome. multipoint interleaves the genes of chromosome 1 with chromosome 2
+    :return:
+    """
     n_chromosomes,n_genes = population.shape
 
     assert size is not None, "Cannot have no size for population!!!"
     # if the population is an even number, crossover is no problem (every other pair crossed)
 
-    crossover_enumerations = list(itertools.permutations(np.arange(n_chromosomes),2))
     # TODO: find faster way of this perhaps...
+    crossover_enumerations = list(itertools.permutations(np.arange(n_chromosomes),2))
     np.random.shuffle(crossover_enumerations)
     pop1idx, pop2idx = zip(*crossover_enumerations[:(size)])
+    # pop1idx = np.random.choice(n_chromosomes,size=size)
+    # pop2idx = np.random.choice(n_chromosomes,size=size)
+
     #
     # if n_chromosomes % 2 == 0:
     #     population1 = population[::2]
