@@ -12,6 +12,7 @@ from src.genetic_operations import generate_population
 from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized,fetch_openml
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import SequentialFeatureSelector
 
 import argparse
 import numpy as np
@@ -40,33 +41,54 @@ def main(args):
     baseline_metric = metric(y_te,y_pr)
 
     print("Baseline Fit Score={:.3f}".format(baseline_metric))
-    print()
-    print("Genetic Algorithm Evolution")
-    for evo in np.arange(args.evolution_rounds):
 
+    if args.algorithm == "rfs":
+        print()
         start_time = time()
-        scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                           population,LogisticRegression,metric,verbose=False)
-
-        population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
+        clf = LogisticRegression(n_jobs=-2,random_state=123)
+        sfs = SequentialFeatureSelector(clf,n_jobs=-2)
+        sfs.fit(X_tr,y_tr)
         end_time = time()
-        total_time = end_time-start_time
+        total_time = end_time - start_time
+        X_tr_filtered = sfs.transform(X_tr)
+        X_te_filtered = sfs.transform(X_te)
 
-        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+        clf.fit(X_tr_filtered,y_tr)
+        y_pr = clf.predict(X_te_filtered)
+        sfs_metric = metric(y_te,y_pr)
 
-    print("Random Feature Evolution")
-    for evo in np.arange(args.evolution_rounds):
+        print("Forward-Backward RFS \t Score={:.3f} \t time={:.3f}".format(sfs_metric,total_time))
+        print()
 
-        start_time = time()
-        population = generate_population(args.population_size, n_genes)
-        scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                           population,LogisticRegression,metric,verbose=False)
+    elif args.algorithm == "ga":
+        print("Genetic Algorithm Evolution")
+        for evo in np.arange(args.evolution_rounds):
 
-        end_time = time()
-        total_time = end_time-start_time
+            start_time = time()
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,
+                               population,LogisticRegression,metric,verbose=False)
 
-        print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+            population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
+            end_time = time()
+            total_time = end_time-start_time
 
+            print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+
+    elif args.algorithm == "random":
+        print("Random Feature Evolution")
+        for evo in np.arange(args.evolution_rounds):
+
+            start_time = time()
+            population = generate_population(args.population_size, n_genes)
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,
+                               population,LogisticRegression,metric,verbose=False)
+
+            end_time = time()
+            total_time = end_time-start_time
+
+            print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+    else:
+        raise Exception("Sorry, not a valid argument to choose")
 
 
 if __name__ == "__main__":
@@ -95,6 +117,9 @@ if __name__ == "__main__":
 
     parser.add_argument('--stopping_threshold', type=float, default=0.99,
                         help='If the metric is above the stopping threshold, end search')
+
+    parser.add_argument('--algorithm', type=str, default="ga",
+                        help='Type of algorithm for feature selection (ga,rfs,random)')
 
 
 
