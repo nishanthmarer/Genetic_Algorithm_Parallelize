@@ -8,10 +8,9 @@ patch_sklearn()
 
 from src.genetic_selection import fitness_population,fitness_population_joblib,select_metric,generate_next_population
 from src.genetic_operations import generate_population
+from src.utils import load_dataset
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.datasets import load_breast_cancer,fetch_20newsgroups_vectorized,fetch_openml
-from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import SequentialFeatureSelector
 
 import argparse
@@ -25,12 +24,11 @@ random.seed(123)
 np.random.seed(123)
 
 def main(args):
-    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False)
-    X = X.astype(float); y=y.astype(float)
-    print("Dataset Shape: ",X.shape)
+    X_tr,X_te,y_tr,y_te = load_dataset(args.dataset)
 
-    N,n_genes = X.shape
-    X_tr,X_te,y_tr,y_te = train_test_split(X,y,test_size=0.2,stratify=y,random_state=123)
+    N,n_genes = X_tr.shape
+    print("Dataset Train Shape: ",X_tr.shape)
+    print("Dataset Test Shape: ",X_te.shape)
 
     metric = select_metric(args.metric_choice)
 
