@@ -2,7 +2,7 @@ def warn(*args, **kwargs):
     pass
 import warnings
 warnings.warn = warn
-
+#
 from sklearnex import patch_sklearn
 patch_sklearn()
 
@@ -12,6 +12,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score,accuracy_score,roc_auc_score
+
+from joblib import Parallel,delayed
 
 import numpy as np
 from tqdm import tqdm
@@ -24,7 +26,7 @@ def data_chromosome_subset(X,chromosome):
     """
     return X[:,chromosome.ravel()==1]
 
-def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
+def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric,n_jobs=1):
     """
     :param X_tr: The train dataset as an numpy array
     :param y_tr: The train label predictions as numpy array
@@ -38,12 +40,12 @@ def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
     # reshape chromosome incase it has wrong dimension...
     X_tr_subset = data_chromosome_subset(X_tr,chromosome)
     X_te_subset = data_chromosome_subset(X_te,chromosome)
-    clf = model(random_state=123,n_jobs=-2)
+    clf = model(random_state=123,n_jobs=n_jobs)
     clf.fit(X_tr_subset,y_tr)
     y_pr = clf.predict(X_te_subset)
     return metric(y_te,y_pr)
 
-def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False):
+def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,n_jobs=1,verbose=False):
     """
     :param X_tr: The train dataset as an numpy array
     :param y_tr: The train label predictions as numpy array
@@ -63,9 +65,30 @@ def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False
         slice = range(n_chromosomes)
 
     for n in slice:
-        scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric)
+        scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric,n_jobs=n_jobs)
 
     return scores
+
+def fitness_population_joblib(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False):
+    """
+    :param X_tr: The train dataset as an numpy array
+    :param y_tr: The train label predictions as numpy array
+    :param X_te: The train dataset as an numpy array
+    :param y_te: The train label predictions as numpy array
+    :param population: a # chromosomes x # genes numpy array of 0s and 1s , where a row is np.array([1.0,0.0,...,1.0])
+    :param model: scikit learn estimator
+    :param model: scikit learn metric that accepts (y_true,y_predicted)
+    :return:
+    """
+    n_chromosomes,n_genes = population.shape
+
+    slice = range(n_chromosomes)
+
+    scores = Parallel(n_jobs=-2)(delayed(fitness_score)(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric,n_jobs=1) for n in slice)
+    # for n in slice:
+    #     scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric)
+
+    return np.array(scores)
 
 def chromosome_selection(scores,population):
     """
@@ -103,7 +126,7 @@ def select_metric(metric_choice):
 
 if __name__ == "__main__":
     n_genes = 10
-    n_chromosomes = 10000
+    n_chromosomes = 10001
     chromosome1 = np.random.randint(0,2,(1,n_genes))
     chromosome2 = np.random.randint(0,2,(1,n_genes))
 
