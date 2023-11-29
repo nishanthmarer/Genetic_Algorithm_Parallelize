@@ -25,7 +25,7 @@ random.seed(123)
 np.random.seed(123)
 
 def main(args):
-    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False,parser="pandas")
+    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False)
     X = X.astype(float); y=y.astype(float)
     print("Dataset Shape: ",X.shape)
 
