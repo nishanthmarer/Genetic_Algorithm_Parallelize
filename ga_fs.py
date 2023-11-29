@@ -110,8 +110,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--dataset', default="gina_agnostic",
-                        help='Dataset Name (Bioresponse,gina_agnostic,...)')
+    parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
+                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
 
     parser.add_argument('--crossover_choice', type=str,default='onepoint',
                         help='Crossover options for chromosomes (onepoint,multipoint)')
