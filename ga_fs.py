@@ -25,8 +25,9 @@ random.seed(123)
 np.random.seed(123)
 
 def main(args):
-    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False)
+    X, y = fetch_openml(args.dataset,return_X_y=True,as_frame=False,parser="pandas")
     X = X.astype(float); y=y.astype(float)
+    print("Dataset Shape: ",X.shape)
 
     N,n_genes = X.shape
     X_tr,X_te,y_tr,y_te = train_test_split(X,y,test_size=0.2,stratify=y,random_state=123)
@@ -34,13 +35,15 @@ def main(args):
     metric = select_metric(args.metric_choice)
 
     population = generate_population(args.population_size,n_genes)
-
+    start_time = time()
     clf = LogisticRegression(n_jobs=-2,random_state=123)
     clf.fit(X_tr,y_tr)
     y_pr = clf.predict(X_te)
     baseline_metric = metric(y_te,y_pr)
+    end_time = time()
 
     print("Baseline Fit Score={:.3f}".format(baseline_metric))
+    print("Time to complete={:.3f}".format(end_time-start_time))
 
     if args.algorithm == "rfs":
         print()
@@ -66,7 +69,7 @@ def main(args):
 
             start_time = time()
             scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                               population,LogisticRegression,metric,verbose=False)
+                               population,LogisticRegression,metric,n_jobs=-2,verbose=False)
 
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
