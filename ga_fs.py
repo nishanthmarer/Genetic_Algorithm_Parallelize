@@ -2,11 +2,12 @@ def warn(*args, **kwargs):
     pass
 import warnings
 warnings.warn = warn
+from joblib import Parallel,delayed
 
 from sklearnex import patch_sklearn
 patch_sklearn()
 
-from src.genetic_selection import fitness_population,fitness_population_joblib,select_metric,generate_next_population
+from src.genetic_selection import fitness_population,fitness_population_joblib,select_metric,generate_next_population,fitness_score
 from src.genetic_operations import generate_population
 from src.utils import load_dataset
 
@@ -23,7 +24,45 @@ from time import time
 random.seed(123)
 np.random.seed(123)
 
-def main(args):
+# def main(args):
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
+                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
+
+    parser.add_argument('--crossover_choice', type=str,default='onepoint',
+                        help='Crossover options for chromosomes (onepoint,multipoint)')
+
+    parser.add_argument('--mutation_rate', type=float, default=0.2, help='Mutation rate for the chromosome')
+
+
+    parser.add_argument('--metric_choice', type=str,default='accuracy',
+                        help='Crossover options for chromosomes (f1,accuracy,roc_auc_score)')
+
+    parser.add_argument('--population_size', type=int, default=500, help='Number of chromosomes to search over')
+
+    parser.add_argument('--elitism', type=int, default=2, help='Number fittest chromosomes to keep each population round')
+
+
+    parser.add_argument('--evolution_rounds', type=int, default=15, help='Number of evolution rounds to generate populations for')
+
+
+    parser.add_argument('--stopping_threshold', type=float, default=0.99,
+                        help='If the metric is above the stopping threshold, end search')
+
+    parser.add_argument('--algorithm', type=str, default="ga",
+                        help='Type of algorithm for feature selection (ga,rfs,random)')
+
+
+
+    args = parser.parse_args()
+
+    # main(args)
     X_tr,X_te,y_tr,y_te = load_dataset(args.dataset)
 
     N,n_genes = X_tr.shape
@@ -80,8 +119,13 @@ def main(args):
         for evo in np.arange(args.evolution_rounds):
 
             start_time = time()
-            scores = fitness_population_joblib(X_tr,y_tr,X_te,y_te,
-                               population,LogisticRegression,metric,verbose=False)
+
+            n_chromosomes, n_genes = population.shape
+
+            scores = Parallel(n_jobs=-2,prefer='threads')(
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
+
+            scores = np.array(scores)
 
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
@@ -104,40 +148,3 @@ def main(args):
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
     else:
         raise Exception("Sorry, not a valid argument to choose")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
-                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
-
-    parser.add_argument('--crossover_choice', type=str,default='onepoint',
-                        help='Crossover options for chromosomes (onepoint,multipoint)')
-
-    parser.add_argument('--mutation_rate', type=float, default=0.2, help='Mutation rate for the chromosome')
-
-
-    parser.add_argument('--metric_choice', type=str,default='accuracy',
-                        help='Crossover options for chromosomes (f1,accuracy,roc_auc_score)')
-
-    parser.add_argument('--population_size', type=int, default=500, help='Number of chromosomes to search over')
-
-    parser.add_argument('--elitism', type=int, default=2, help='Number fittest chromosomes to keep each population round')
-
-
-    parser.add_argument('--evolution_rounds', type=int, default=15, help='Number of evolution rounds to generate populations for')
-
-
-    parser.add_argument('--stopping_threshold', type=float, default=0.99,
-                        help='If the metric is above the stopping threshold, end search')
-
-    parser.add_argument('--algorithm', type=str, default="ga",
-                        help='Type of algorithm for feature selection (ga,rfs,random)')
-
-
-
-    args = parser.parse_args()
-
-    main(args)
