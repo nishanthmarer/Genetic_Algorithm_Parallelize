@@ -7,7 +7,7 @@ from joblib import Parallel,delayed
 from sklearnex import patch_sklearn
 patch_sklearn()
 
-from src.genetic_selection import fitness_population,fitness_population_joblib,select_metric,generate_next_population,fitness_score
+from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score
 from src.genetic_operations import generate_population
 from src.utils import load_dataset
 
@@ -57,6 +57,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--algorithm', type=str, default="ga",
                         help='Type of algorithm for feature selection (ga,rfs,random)')
+
+    parser.add_argument('--backend_prefer',type=str,default="processes",help="backend for joblib (loky,threading)")
 
 
 
@@ -122,7 +124,8 @@ if __name__ == "__main__":
 
             n_chromosomes, n_genes = population.shape
 
-            scores = Parallel(n_jobs=-2,prefer='threads')(
+            #,prefer='threads'
+            scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
                 delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
 
             scores = np.array(scores)
