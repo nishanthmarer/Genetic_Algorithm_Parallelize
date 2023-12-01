@@ -11,6 +11,7 @@ from src.genetic_selection import fitness_population,select_metric,generate_next
 from src.genetic_operations import generate_population
 from src.utils import load_dataset
 
+import xgboost as xgb
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SequentialFeatureSelector
 
@@ -75,7 +76,9 @@ if __name__ == "__main__":
 
     population = generate_population(args.population_size,n_genes)
     start_time = time()
-    clf = LogisticRegression(n_jobs=-2,random_state=123)
+    # clf = LogisticRegression(n_jobs=-2,random_state=123)
+    clf = xgb.XGBClassifier(random_state=123)
+
     clf.fit(X_tr,y_tr)
     y_pr = clf.predict(X_te)
     baseline_metric = metric(y_te,y_pr)
@@ -109,8 +112,8 @@ if __name__ == "__main__":
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
-            scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                               population,LogisticRegression,metric,n_jobs=-2,verbose=False)
+            # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,LogisticRegression,metric,n_jobs=-2,verbose=False)
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
 
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
@@ -118,7 +121,6 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             evo += 1
-            
 
     elif args.algorithm == "ga_joblib":
         print("Genetic Algorithm Evolution with joblib")
@@ -131,8 +133,11 @@ if __name__ == "__main__":
             n_chromosomes, n_genes = population.shape
 
             #,prefer='threads'
+            # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
+            #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
+
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier(), metric, n_jobs=1) for n in range(n_chromosomes))
 
             scores = np.array(scores)
 
