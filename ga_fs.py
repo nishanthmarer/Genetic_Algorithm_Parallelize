@@ -104,7 +104,9 @@ if __name__ == "__main__":
 
     elif args.algorithm == "ga":
         print("Genetic Algorithm Evolution")
-        for evo in np.arange(args.evolution_rounds):
+        scores = baseline_metric
+        evo = 1
+        while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
             scores = fitness_population(X_tr,y_tr,X_te,y_te,
@@ -115,10 +117,13 @@ if __name__ == "__main__":
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+            evo += 1
 
     elif args.algorithm == "ga_joblib":
         print("Genetic Algorithm Evolution with joblib")
-        for evo in np.arange(args.evolution_rounds):
+        scores = baseline_metric
+        evo = 1
+        while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
 
@@ -135,6 +140,7 @@ if __name__ == "__main__":
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+            evo += 1
 
     elif args.algorithm == "random":
         print("Random Feature Evolution")
