@@ -118,6 +118,7 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             evo += 1
+            
 
     elif args.algorithm == "ga_joblib":
         print("Genetic Algorithm Evolution with joblib")
