@@ -137,7 +137,7 @@ if __name__ == "__main__":
             #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
 
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier(), metric, n_jobs=1) for n in range(n_chromosomes))
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))
 
             scores = np.array(scores)
 
