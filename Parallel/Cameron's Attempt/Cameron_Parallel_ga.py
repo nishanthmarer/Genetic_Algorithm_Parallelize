@@ -21,11 +21,12 @@ from Cameron_Parallel_helperFunctions import (
 )
 
 def main(args):
+    # Initialize Spark context and session
     findspark.init()
-
     sc = SparkContext("local[*]", appName="Parallel Genetic Algorithm")
     spark = SparkSession(sc)
 
+    # Load and preprocess data
     X, y = fetch_openml(args.dataset, return_X_y=True, as_frame=False)
     X = X.astype(float)
     y = y.astype(float)
@@ -36,32 +37,43 @@ def main(args):
     sparkDF = spark.createDataFrame(df_pandas)
     sparkDF = sparkDF.withColumn("target", (col("target") + 1) / 2)
 
+    # Define a vector assembler to convert feature columns into a single vector column
     vector_assembler = VectorAssembler(
         inputCols=[f"feature{i+1}" for i in range(X.shape[1])], outputCol="features"
     )
     sparkDF = vector_assembler.transform(sparkDF).select("features", "target")
 
+    # Split the data into training and test sets
     train_data, test_data = sparkDF.randomSplit([0.7, 0.3], seed=42)
 
+    # Define the logistic regression model
     lr = LogisticRegression(featuresCol="features", labelCol="target")
+
+    # Define the evaluator with the desired metric, e.g., areaUnderROC
     evaluator = BinaryClassificationEvaluator(
         labelCol="target", rawPredictionCol="rawPrediction", metricName="areaUnderROC"
     )
 
+    # Initialize the population (to be parallelized)
     population_size = args.population_size
     num_features = X.shape[1]
     population = np.random.randint(2, size=(population_size, num_features))
 
+    # Parallelize the population as an RDD
     population_rdd = sc.parallelize(population)
 
+    # Broadcast the model and evaluator to the cluster
     model_broadcast = sc.broadcast(lr)
     evaluator_broadcast = sc.broadcast(evaluator)
 
+    # Main loop for the genetic algorithm
     for generation in range(args.evolution_rounds):
         print(f"Starting generation {generation}")
 
+       # Broadcast the population to the cluster
         broadcast_population = sc.broadcast(population)
 
+        # Map the fitness calculation over the population RDD using the index
         fitness_scores_rdd = sc.parallelize(range(population_size)).map(
             lambda i: fitness_scoreRDD(
                 train_data,
@@ -72,21 +84,27 @@ def main(args):
             )
         )
 
+        # Collect the fitness scores from the RDD
         fitness_scores = fitness_scores_rdd.collect()
         print(f"Fitness scores for generation {generation}: {fitness_scores}")
 
+        # Perform selection based on fitness scores
         selected_population = selection_process(fitness_scores, broadcast_population.value)
         new_population = crossover(selected_population)
         new_population = mutation(new_population)
 
+        # Update the population for the next generation
         population = new_population
 
+        # Check for convergence or other stopping criteria
         if stopping_condition(fitness_scores, args.stopping_threshold):
             print(f"Stopping condition met at generation {generation}")
             break
 
+        # Destroy the broadcast variables to free resources
         broadcast_population.unpersist()
 
+    # Destroy the broadcast variables to free resources and terminate Spark context
     model_broadcast.unpersist()
     evaluator_broadcast.unpersist()
     sc.stop()
