@@ -1,14 +1,13 @@
 # Cameron_Parallel_helperFunctions.py
 
 from pyspark.sql.functions import col, udf
-from pyspark.ml.linalg import VectorUDT, Vectors
+from pyspark.ml.linalg import VectorUDT, Vectors, SparseVector
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark import Broadcast
 import numpy as np
 
 
-# UDF for applying chromosome to the features
 def apply_chromosome(features, chromosome):
     selected_features = [
         feature if gene else 0.0 for feature, gene in zip(features, chromosome)
@@ -16,26 +15,29 @@ def apply_chromosome(features, chromosome):
     return Vectors.dense(selected_features)
 
 
-udf_apply_chromosome = udf(apply_chromosome, VectorUDT())
-
-
-def fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator):
-    # Define UDF inside the function to avoid serialization issues
-    apply_chromosome_udf = udf(
-        lambda features: apply_chromosome(features, chromosome), VectorUDT()
+def fitness_scoreRDD(train_data, test_data, chromosome, sc):
+    lr = LogisticRegression(featuresCol="features", labelCol="target")
+    evaluator = BinaryClassificationEvaluator(
+        labelCol="target", rawPredictionCol="rawPrediction", metricName="areaUnderROC"
     )
 
-    # Apply the chromosome to the features in the dataset
-    train_data_transformed = train_data.withColumn(
-        "features", apply_chromosome_udf(col("features"))
-    )
-    test_data_transformed = test_data.withColumn(
-        "features", apply_chromosome_udf(col("features"))
-    )
+    # Function to apply chromosome to features
+    def apply_chromosome_to_row(row):
+        features = row.features.toArray()
+        modified_features = [feature if gene else 0.0 for feature, gene in zip(features, chromosome)]
+        return row.target, SparseVector(len(modified_features), enumerate(modified_features))
+
+    # Transform train and test data RDDs
+    train_rdd = train_data.rdd.map(apply_chromosome_to_row)
+    test_rdd = test_data.rdd.map(apply_chromosome_to_row)
+
+    # Convert RDDs back to DataFrames
+    train_df = sc.createDataFrame(train_rdd, ["target", "features"])
+    test_df = sc.createDataFrame(test_rdd, ["target", "features"])
 
     # Fit the model and make predictions
-    fitted_model = lr.fit(train_data_transformed)
-    predictions = fitted_model.transform(test_data_transformed)
+    fitted_model = lr.fit(train_df)
+    predictions = fitted_model.transform(test_df)
 
     # Calculate and return the fitness score
     fitness_score = evaluator.evaluate(predictions)
