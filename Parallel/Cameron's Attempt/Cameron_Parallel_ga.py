@@ -114,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument('--dataset', default="gina_agnostic", help='Dataset Name')
     parser.add_argument('--population_size', type=int, default=100, help='Number of chromosomes')
     parser.add_argument('--evolution_rounds', type=int, default=50, help='Number of evolution rounds')
-    parser.add_argument('--stopping_threshold', type=float, default=0.95, help='Stopping threshold for fitness score')
+    parser.add_argument('--stopping_threshold', type=float, default=0.90, help='Stopping threshold for fitness score')
     
     args = parser.parse_args()
     main(args)
