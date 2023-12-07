@@ -15,13 +15,11 @@ def apply_chromosome(features, chromosome):
     ]
     return Vectors.dense(selected_features)
 
+
 udf_apply_chromosome = udf(apply_chromosome, VectorUDT())
 
-def fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator):
-    # Local import for PySpark ML classes
-    from pyspark.ml.classification import LogisticRegression
-    from pyspark.ml.evaluation import BinaryClassificationEvaluator
 
+def fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator):
     # Define UDF inside the function to avoid serialization issues
     apply_chromosome_udf = udf(
         lambda features: apply_chromosome(features, chromosome), VectorUDT()

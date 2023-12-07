@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import findspark
+
 findspark.init()
+
 import argparse
 import pandas as pd
 import numpy as np
@@ -20,6 +22,7 @@ from Cameron_Parallel_helperFunctions import (
     mutation,
     stopping_condition,
 )
+
 
 def main(args):
     # Load and preprocess data
@@ -42,7 +45,7 @@ def main(args):
     # Split the data into training and test sets
     train_data, test_data = sparkDF.randomSplit([0.7, 0.3], seed=42)
 
-    # Instantiate Logistic Regression model and evaluator 
+    # Instantiate Logistic Regression model and evaluator
     lr = LogisticRegression(featuresCol="features", labelCol="target")
     evaluator = BinaryClassificationEvaluator(
         labelCol="target", rawPredictionCol="rawPrediction", metricName="areaUnderROC"
@@ -62,7 +65,9 @@ def main(args):
 
         # Map the fitness calculation over the population RDD
         fitness_scores_rdd = population_rdd.map(
-            lambda chromosome: fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator)
+            lambda chromosome: fitness_scoreRDD(
+                train_data, test_data, chromosome, lr, evaluator
+            )
         )
 
         # Collect the fitness scores from the RDD
@@ -87,14 +92,24 @@ def main(args):
     # Terminate Spark context
     sc.stop()
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Parallel Genetic Algorithm')
-    parser.add_argument('--dataset', default="gina_agnostic", help='Dataset Name')
-    parser.add_argument('--population_size', type=int, default=100, help='Number of chromosomes')
-    parser.add_argument('--evolution_rounds', type=int, default=50, help='Number of evolution rounds')
-    parser.add_argument('--stopping_threshold', type=float, default=0.90, help='Stopping threshold for fitness score')
+    parser = argparse.ArgumentParser(description="Parallel Genetic Algorithm")
+    parser.add_argument("--dataset", default="gina_agnostic", help="Dataset Name")
+    parser.add_argument(
+        "--population_size", type=int, default=100, help="Number of chromosomes"
+    )
+    parser.add_argument(
+        "--evolution_rounds", type=int, default=50, help="Number of evolution rounds"
+    )
+    parser.add_argument(
+        "--stopping_threshold",
+        type=float,
+        default=0.90,
+        help="Stopping threshold for fitness score",
+    )
     args = parser.parse_args()
-    
+
     # Initialize Spark context and session
     sc = SparkContext("local[*]", appName="Parallel Genetic Algorithm")
     spark = SparkSession(sc)
