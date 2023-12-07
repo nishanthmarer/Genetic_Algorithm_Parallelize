@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import findspark
+findspark.init()
 import argparse
 import pandas as pd
 import numpy as np
@@ -21,11 +22,6 @@ from Cameron_Parallel_helperFunctions import (
 )
 
 def main(args):
-    # Initialize Spark context and session
-    findspark.init()
-    sc = SparkContext("local[*]", appName="Parallel Genetic Algorithm")
-    spark = SparkSession(sc)
-
     # Load and preprocess data
     X, y = fetch_openml(args.dataset, return_X_y=True, as_frame=False)
     X = X.astype(float)
@@ -115,6 +111,9 @@ if __name__ == "__main__":
     parser.add_argument('--population_size', type=int, default=100, help='Number of chromosomes')
     parser.add_argument('--evolution_rounds', type=int, default=50, help='Number of evolution rounds')
     parser.add_argument('--stopping_threshold', type=float, default=0.90, help='Stopping threshold for fitness score')
-    
     args = parser.parse_args()
+    
+    # Initialize Spark context and session
+    sc = SparkContext("local[*]", appName="Parallel Genetic Algorithm")
+    spark = SparkSession(sc)
     main(args)
