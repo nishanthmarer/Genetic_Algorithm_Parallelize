@@ -1,3 +1,5 @@
+# Cameron_Parallel_helperFunctions.py
+
 from pyspark.sql.functions import col, udf
 from pyspark.ml.linalg import VectorUDT, Vectors
 from pyspark.ml.classification import LogisticRegression
@@ -13,17 +15,17 @@ def apply_chromosome(features, chromosome):
     ]
     return Vectors.dense(selected_features)
 
-
 udf_apply_chromosome = udf(apply_chromosome, VectorUDT())
 
+def fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator):
+    # Local import for PySpark ML classes
+    from pyspark.ml.classification import LogisticRegression
+    from pyspark.ml.evaluation import BinaryClassificationEvaluator
 
-def fitness_scoreRDD(train_data, test_data, chromosome, model, evaluator):
     # Define UDF inside the function to avoid serialization issues
     apply_chromosome_udf = udf(
         lambda features: apply_chromosome(features, chromosome), VectorUDT()
     )
-    model = model_broadcast.value
-    evaluator = evaluator_broadcast.value
 
     # Apply the chromosome to the features in the dataset
     train_data_transformed = train_data.withColumn(
@@ -34,7 +36,7 @@ def fitness_scoreRDD(train_data, test_data, chromosome, model, evaluator):
     )
 
     # Fit the model and make predictions
-    fitted_model = model.fit(train_data_transformed)
+    fitted_model = lr.fit(train_data_transformed)
     predictions = fitted_model.transform(test_data_transformed)
 
     # Calculate and return the fitness score

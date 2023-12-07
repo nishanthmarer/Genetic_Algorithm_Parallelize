@@ -42,10 +42,8 @@ def main(args):
     # Split the data into training and test sets
     train_data, test_data = sparkDF.randomSplit([0.7, 0.3], seed=42)
 
-    # Define the logistic regression model
+    # Instantiate Logistic Regression model and evaluator 
     lr = LogisticRegression(featuresCol="features", labelCol="target")
-
-    # Define the evaluator with the desired metric, e.g., areaUnderROC
     evaluator = BinaryClassificationEvaluator(
         labelCol="target", rawPredictionCol="rawPrediction", metricName="areaUnderROC"
     )
@@ -58,26 +56,13 @@ def main(args):
     # Parallelize the population as an RDD
     population_rdd = sc.parallelize(population)
 
-    # Broadcast the model and evaluator to the cluster
-    model_broadcast = sc.broadcast(lr)
-    evaluator_broadcast = sc.broadcast(evaluator)
-
     # Main loop for the genetic algorithm
     for generation in range(args.evolution_rounds):
         print(f"Starting generation {generation}")
 
-       # Broadcast the population to the cluster
-        broadcast_population = sc.broadcast(population)
-
-        # Map the fitness calculation over the population RDD using the index
-        fitness_scores_rdd = sc.parallelize(range(population_size)).map(
-            lambda i: fitness_scoreRDD(
-                train_data,
-                test_data,
-                broadcast_population.value[i],
-                model_broadcast,
-                evaluator_broadcast,
-            )
+        # Map the fitness calculation over the population RDD
+        fitness_scores_rdd = population_rdd.map(
+            lambda chromosome: fitness_scoreRDD(train_data, test_data, chromosome, lr, evaluator)
         )
 
         # Collect the fitness scores from the RDD
@@ -85,7 +70,9 @@ def main(args):
         print(f"Fitness scores for generation {generation}: {fitness_scores}")
 
         # Perform selection based on fitness scores
-        selected_population = selection_process(fitness_scores, broadcast_population.value)
+        selected_population = selection_process(fitness_scores, population)
+
+        # Perform crossover and mutation to generate a new population
         new_population = crossover(selected_population)
         new_population = mutation(new_population)
 
@@ -97,12 +84,7 @@ def main(args):
             print(f"Stopping condition met at generation {generation}")
             break
 
-        # Destroy the broadcast variables to free resources
-        broadcast_population.unpersist()
-
-    # Destroy the broadcast variables to free resources and terminate Spark context
-    model_broadcast.unpersist()
-    evaluator_broadcast.unpersist()
+    # Terminate Spark context
     sc.stop()
 
 if __name__ == "__main__":
