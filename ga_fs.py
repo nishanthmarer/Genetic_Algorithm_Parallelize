@@ -7,7 +7,7 @@ from joblib import Parallel,delayed
 from sklearnex import patch_sklearn
 patch_sklearn()
 
-from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score
+from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score,chromosome_selection
 from src.genetic_operations import generate_population
 from src.utils import load_dataset
 
@@ -20,6 +20,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
+import os
+from datetime import datetime
 from time import time
 
 random.seed(123)
@@ -45,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--metric_choice', type=str,default='accuracy',
                         help='Crossover options for chromosomes (f1,accuracy,roc_auc_score)')
 
-    parser.add_argument('--population_size', type=int, default=500, help='Number of chromosomes to search over')
+    parser.add_argument('--population_size', type=int, default=200, help='Number of chromosomes to search over')
 
     parser.add_argument('--elitism', type=int, default=2, help='Number fittest chromosomes to keep each population round')
 
@@ -56,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument('--stopping_threshold', type=float, default=0.99,
                         help='If the metric is above the stopping threshold, end search')
 
-    parser.add_argument('--algorithm', type=str, default="ga",
+    parser.add_argument('--algorithm', type=str, default="ga_joblib",
                         help='Type of algorithm for feature selection (ga,rfs,random)')
 
     parser.add_argument('--backend_prefer',type=str,default="processes",help="backend for joblib (loky,threading)")
@@ -64,6 +66,12 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+
+    os.makedirs('./results',exist_ok=True)
+    results_path = os.path.join('./results')
+
+    now = datetime.now()
+    dt_string = now.strftime("%d_%m_%Y-%H_%M_%S")
 
     # main(args)
     X_tr,X_te,y_tr,y_te = load_dataset(args.dataset)
@@ -76,8 +84,10 @@ if __name__ == "__main__":
 
     population = generate_population(args.population_size,n_genes)
     start_time = time()
-    # clf = LogisticRegression(n_jobs=-2,random_state=123)
-    clf = xgb.XGBClassifier(random_state=123)
+    clf = LogisticRegression(n_jobs=-2,random_state=123)
+    model = 'log'
+    # clf = xgb.XGBClassifier(random_state=123)
+    # model = xgb
 
     clf.fit(X_tr,y_tr)
     y_pr = clf.predict(X_te)
@@ -108,58 +118,99 @@ if __name__ == "__main__":
     elif args.algorithm == "ga":
         print("Genetic Algorithm Evolution")
         scores = baseline_metric
-        evo = 1
+        evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
-            # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,LogisticRegression,metric,n_jobs=-2,verbose=False)
-            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,LogisticRegression,metric,n_jobs=-2,verbose=False)
+            # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
+
+            best_chromosome = population[np.argmax(scores)]
 
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+            
+            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+            else:
+                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
+                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data = pd.concat((columns,result))
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+
+            
             evo += 1
 
     elif args.algorithm == "ga_joblib":
         print("Genetic Algorithm Evolution with joblib")
         scores = baseline_metric
-        evo = 1
+        evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
 
             n_chromosomes, n_genes = population.shape
 
-            #,prefer='threads'
-            # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-            #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
-
+            # prefer='threads'
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
+
+            # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
+            #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))
 
             scores = np.array(scores)
+
+            best_chromosome = population[np.argmax(scores)]
 
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+            
+            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+            else:
+                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
+                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data = pd.concat((columns,result))
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+
             evo += 1
 
     elif args.algorithm == "random":
         print("Random Feature Evolution")
-        for evo in np.arange(args.evolution_rounds):
+        while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
             population = generate_population(args.population_size, n_genes)
             scores = fitness_population(X_tr,y_tr,X_te,y_te,
                                population,LogisticRegression,metric,verbose=False)
+            # scores = fitness_population(X_tr,y_tr,X_te,y_te,
+            #                    population,xgb.XGBClassifier,metric,verbose=False)
+            
+            best_chromosome = population[np.argmax(scores)]
 
             end_time = time()
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
+    
+            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+            else:
+                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
+                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+                data = pd.concat((columns,result))
+                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+
+            evo += 1
+    
     else:
         raise Exception("Sorry, not a valid argument to choose")

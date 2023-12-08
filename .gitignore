@@ -8,3 +8,4 @@
 /derivations/
 *.ipynb_checkpoints
 /dataset_cache/
+/results/
