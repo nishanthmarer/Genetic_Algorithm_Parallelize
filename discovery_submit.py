@@ -12,7 +12,7 @@ blocking=False
 
 models = ["logistic","mlp","xgboost"]
 datasets = ["gina_agnostic","hiva_agnostic","sylva_agnostic"]
-algorithms = ["rfs","ga_seq","ga_joblib","random"]
+algorithms = ["ga_seq","ga_joblib","random","rfs"]
 metrics = ["f1"]
 crossovers = ["onepoint"]
 population_sizes = [50,250,500]
