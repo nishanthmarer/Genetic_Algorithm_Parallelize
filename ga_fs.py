@@ -9,10 +9,9 @@ patch_sklearn()
 
 from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score,chromosome_selection
 from src.genetic_operations import generate_population
-from src.utils import load_dataset
+from src.utils import load_dataset,select_model
 
 import xgboost as xgb
-from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import SequentialFeatureSelector
 
 import argparse
@@ -58,6 +57,9 @@ if __name__ == "__main__":
     parser.add_argument('--stopping_threshold', type=float, default=0.99,
                         help='If the metric is above the stopping threshold, end search')
 
+    parser.add_argument('--model', type=str, default="logistic",
+                        help='Type of model for fitting')
+
     parser.add_argument('--algorithm', type=str, default="ga_joblib",
                         help='Type of algorithm for feature selection (ga,rfs,random)')
 
@@ -84,9 +86,8 @@ if __name__ == "__main__":
 
     population = generate_population(args.population_size,n_genes)
     start_time = time()
-    clf = LogisticRegression(n_jobs=-2,random_state=123)
-    model = 'log'
-    # clf = xgb.XGBClassifier(random_state=123)
+    model = select_model(args.model) # LogisticRegression(n_jobs=-2,random_state=123)
+    clf = model(n_jobs=-2,random_state=123) #xgb.XGBClassifier(random_state=123)
     # model = xgb
 
     clf.fit(X_tr,y_tr)
@@ -97,10 +98,13 @@ if __name__ == "__main__":
     print("Baseline Fit Score={:.3f}".format(baseline_metric))
     print("Time to complete={:.3f}".format(end_time-start_time))
 
+
+    print("= "*10,args.algorithm," ="*10)
+
     if args.algorithm == "rfs":
         print()
         start_time = time()
-        clf = LogisticRegression(n_jobs=-2,random_state=123)
+        clf = model(n_jobs=-2,random_state=123)
         sfs = SequentialFeatureSelector(clf,n_jobs=-2)
         sfs.fit(X_tr,y_tr)
         end_time = time()
@@ -122,7 +126,7 @@ if __name__ == "__main__":
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
-            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,LogisticRegression,metric,n_jobs=-2,verbose=False)
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,n_jobs=-2,verbose=False)
             # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
 
             best_chromosome = population[np.argmax(scores)]
@@ -133,14 +137,14 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             
             evo += 1
@@ -157,7 +161,7 @@ if __name__ == "__main__":
 
             # prefer='threads'
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=1) for n in range(n_chromosomes))
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], model, metric, n_jobs=1) for n in range(n_chromosomes))
 
             # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
             #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))
@@ -172,14 +176,14 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             evo += 1
 
@@ -192,7 +196,7 @@ if __name__ == "__main__":
             start_time = time()
             population = generate_population(args.population_size, n_genes)
             scores = fitness_population(X_tr,y_tr,X_te,y_te,
-                               population,LogisticRegression,metric,verbose=False)
+                               population,model,metric,verbose=False)
             # scores = fitness_population(X_tr,y_tr,X_te,y_te,
             #                    population,xgb.XGBClassifier,metric,verbose=False)
             
@@ -203,14 +207,14 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
     
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             evo += 1
     
