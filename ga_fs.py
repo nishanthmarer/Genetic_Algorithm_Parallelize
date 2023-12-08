@@ -119,7 +119,7 @@ if __name__ == "__main__":
         print("Forward-Backward RFS \t Score={:.3f} \t time={:.3f}".format(sfs_metric,total_time))
         print()
 
-    elif args.algorithm == "ga":
+    elif args.algorithm == "ga_seq":
         print("Genetic Algorithm Evolution")
         scores = baseline_metric
         evo = 0
