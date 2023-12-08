@@ -35,7 +35,7 @@ if __name__ == "__main__":
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
-                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
+                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,gina_agnostic,hiva_agnostic,sylva_agnostic)')
 
     parser.add_argument('--crossover_choice', type=str,default='onepoint',
                         help='Crossover options for chromosomes (onepoint,multipoint)')
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     parser.add_argument('--algorithm', type=str, default="ga_joblib",
                         help='Type of algorithm for feature selection (ga,rfs,random)')
 
-    parser.add_argument('--backend_prefer',type=str,default="processes",help="backend for joblib (loky,threading)")
+    parser.add_argument('--backend_prefer',type=str,default="processes",help="backend preference for joblib  ('processes','threads') IGNORE -> (loky,threading)")
 
 
 
