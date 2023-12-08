@@ -47,8 +47,10 @@ if __name__ == "__main__":
 
                                             print(file)
                                             if blocking:
-                                                os.system(f"python ga_fs.py {file}")
+                                                file_full = f"python ga_fs.py {file}"
+                                                print(f'Running: {file_full}')
+                                                os.system(file_full)
                                             else:
                                                 file_full = f"python ga_fs.py {file}"
-                                                print(f"sbatch execute.bash '{file_full}'")
+                                                print(f"Running: sbatch execute.bash '{file_full}'")
                                                 Popen(f"sbatch execute.bash '{file_full}'",shell=True)

@@ -1,6 +1,6 @@
 #!/bin/bash
 #set a job name
-#SBATCH --job-name=freedom
+#SBATCH --job-name=ga
 #a file for job output, you can check job progress
 #SBATCH --output=logs/run1_%j.out
 # a file for errors from the job
@@ -11,11 +11,11 @@
 #number of cores you are requesting
 #SBATCH --cpus-per-task=20
 #memory you are requesting
-#SBATCH --mem=3Gb
+#SBATCH --mem=100Gb
 #partition to use
 #SBATCH --partition=short
 
-module load anaconda3/2022.05
-source activate FREEDOM
+# module load anaconda3/2022.05
+source activate ga
 
 srun $1

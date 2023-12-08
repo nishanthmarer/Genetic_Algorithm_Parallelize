@@ -116,8 +116,22 @@ if __name__ == "__main__":
         y_pr = clf.predict(X_te_filtered)
         sfs_metric = metric(y_te,y_pr)
 
+        best_chromosome = population[np.argmax(sfs_metric)]
+
         print("Forward-Backward RFS \t Score={:.3f} \t time={:.3f}".format(sfs_metric,total_time))
         print()
+
+        evo = 0
+
+        if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
+            data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(sfs_metric)], 'Best': [np.max(sfs_metric)], 'Worst': [np.min(sfs_metric)], 'Best Chromosome': [best_chromosome]})
+            data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
+        else:
+            columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
+            result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(sfs_metric)], 'Best': [np.max(sfs_metric)], 'Worst': [np.min(sfs_metric)], 'Best Chromosome': [best_chromosome]})
+            data = pd.concat((columns,result))
+            data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+
 
     elif args.algorithm == "ga_seq":
         print("Genetic Algorithm Evolution")
@@ -127,7 +141,6 @@ if __name__ == "__main__":
 
             start_time = time()
             scores = fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False)
-            # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
 
             best_chromosome = population[np.argmax(scores)]
 
@@ -163,9 +176,6 @@ if __name__ == "__main__":
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
                 delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], model, metric) for n in range(n_chromosomes))
 
-            # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-            #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))
-
             scores = np.array(scores)
 
             best_chromosome = population[np.argmax(scores)]
@@ -197,8 +207,6 @@ if __name__ == "__main__":
             population = generate_population(args.population_size, n_genes)
             scores = fitness_population(X_tr,y_tr,X_te,y_te,
                                population,model,metric,verbose=False)
-            # scores = fitness_population(X_tr,y_tr,X_te,y_te,
-            #                    population,xgb.XGBClassifier,metric,verbose=False)
             
             best_chromosome = population[np.argmax(scores)]
 
