@@ -4,8 +4,8 @@ import warnings
 warnings.warn = warn
 from joblib import Parallel,delayed
 
-from sklearnex import patch_sklearn
-patch_sklearn()
+# from sklearnex import patch_sklearn
+# patch_sklearn()
 
 from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score,chromosome_selection
 from src.genetic_operations import generate_population
