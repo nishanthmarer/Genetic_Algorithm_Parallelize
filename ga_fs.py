@@ -71,7 +71,7 @@ if __name__ == "__main__":
     results_path = os.path.join('./results')
 
     now = datetime.now()
-    dt_string = now.strftime("%d_%m_%Y-%H_%M_%S")
+    dt_string = now.strftime("%d.%m.%Y_%H.%M.%S")
 
     # main(args)
     X_tr,X_te,y_tr,y_te = load_dataset(args.dataset)
@@ -133,14 +133,14 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             
             evo += 1
@@ -172,19 +172,21 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             evo += 1
 
     elif args.algorithm == "random":
         print("Random Feature Evolution")
+        scores = baseline_metric
+        evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
@@ -201,14 +203,14 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
     
-            if os.path.isfile(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv'):
+            if os.path.isfile(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
                 data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='a', header=False, index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
             else:
                 columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
                 result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
                 data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}_{model}_{args.dataset}_{args.metric_choice}_{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+                data.to_csv(f'{results_path}/{args.algorithm}-{model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
 
             evo += 1
     
