@@ -9,7 +9,7 @@
 #in minutes in this case, hh:mm:ss
 #SBATCH --time=24:00:00
 #number of cores you are requesting
-#SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=100
 #memory you are requesting
 #SBATCH --mem=100Gb
 #partition to use

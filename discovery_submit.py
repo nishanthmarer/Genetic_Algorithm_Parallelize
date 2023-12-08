@@ -45,7 +45,7 @@ if __name__ == "__main__":
                                             f"--backend_prefer={back} "\
                                             f"--mutation_rate={mut} "
 
-                                            print(file)
+                                            # print(file)
                                             if blocking:
                                                 file_full = f"python ga_fs.py {file}"
                                                 print(f'Running: {file_full}')
