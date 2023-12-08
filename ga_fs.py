@@ -87,7 +87,7 @@ if __name__ == "__main__":
     population = generate_population(args.population_size,n_genes)
     start_time = time()
     model = select_model(args.model) # LogisticRegression(n_jobs=-2,random_state=123)
-    clf = model(n_jobs=-2,random_state=123) #xgb.XGBClassifier(random_state=123)
+    clf = model(random_state=123) #xgb.XGBClassifier(random_state=123)
     # model = xgb
 
     clf.fit(X_tr,y_tr)
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     if args.algorithm == "rfs":
         print()
         start_time = time()
-        clf = model(n_jobs=-2,random_state=123)
+        clf = model(random_state=123)
         sfs = SequentialFeatureSelector(clf,n_jobs=-2)
         sfs.fit(X_tr,y_tr)
         end_time = time()
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
 
             start_time = time()
-            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,n_jobs=-2,verbose=False)
+            scores = fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False)
             # scores = fitness_population(X_tr,y_tr,X_te,y_te,population,xgb.XGBClassifier,metric,n_jobs=-2,verbose=False)
 
             best_chromosome = population[np.argmax(scores)]
@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
             # prefer='threads'
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
-                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], model, metric, n_jobs=1) for n in range(n_chromosomes))
+                delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], model, metric) for n in range(n_chromosomes))
 
             # scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
             #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], xgb.XGBClassifier, metric, n_jobs=1) for n in range(n_chromosomes))

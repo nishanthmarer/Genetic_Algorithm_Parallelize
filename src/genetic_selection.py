@@ -26,7 +26,7 @@ def data_chromosome_subset(X,chromosome):
     """
     return X[:,chromosome.ravel()==1]
 
-def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric,n_jobs=1):
+def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
     """
     :param X_tr: The train dataset as an numpy array
     :param y_tr: The train label predictions as numpy array
@@ -40,12 +40,12 @@ def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric,n_jobs=1):
     # reshape chromosome incase it has wrong dimension...
     X_tr_subset = data_chromosome_subset(X_tr,chromosome)
     X_te_subset = data_chromosome_subset(X_te,chromosome)
-    clf = model(random_state=123,n_jobs=n_jobs)
+    clf = model(random_state=123)
     clf.fit(X_tr_subset,y_tr)
     y_pr = clf.predict(X_te_subset)
     return metric(y_te,y_pr)
 
-def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,n_jobs=1,verbose=False):
+def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,verbose=False):
     """
     :param X_tr: The train dataset as an numpy array
     :param y_tr: The train label predictions as numpy array
@@ -65,7 +65,7 @@ def fitness_population(X_tr,y_tr,X_te,y_te,population,model,metric,n_jobs=1,verb
         slice = range(n_chromosomes)
 
     for n in slice:
-        scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric,n_jobs=n_jobs)
+        scores[n] = fitness_score(X_tr,y_tr,X_te,y_te,population[[n],:],model,metric)
 
     return scores
 
