@@ -26,17 +26,19 @@ backends = ["processes","threads"]
 stopping_thresholds = [0.99]
 
 if __name__ == "__main__":
-    for back in backends:
-        for popsize in population_sizes:
-            for model in models:
-                for data in datasets:
-                    for algo in algorithms:
-                        for metric in metrics:
-                            for cross in crossovers:
-                                for mut in mutations:
-                                    for elit in elitisms:
-                                        for evos in evolution_rounds:
-                                            for stopping_threshold in stopping_thresholds:
+    for popsize in population_sizes:
+        for model in models:
+            for data in datasets:
+                for algo in algorithms:
+                    for metric in metrics:
+                        for cross in crossovers:
+                            for mut in mutations:
+                                for elit in elitisms:
+                                    for evos in evolution_rounds:
+                                        for stopping_threshold in stopping_thresholds:
+                                            if algo != "ga_joblib":
+                                                backends = ["processes"]                                            
+                                            for back in backends:
 
                                                 file = f"--population_size={popsize} "\
                                                 f"--evolution_rounds={evos} "\
