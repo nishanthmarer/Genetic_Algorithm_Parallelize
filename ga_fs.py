@@ -116,7 +116,6 @@ if __name__ == "__main__":
     print("= "*10,args.algorithm," ="*10)
 
     if args.algorithm == "rfs":
-        print()
         start_time = time()
         clf = model(random_state=123)
         sfs = SequentialFeatureSelector(clf,n_jobs=-2)
