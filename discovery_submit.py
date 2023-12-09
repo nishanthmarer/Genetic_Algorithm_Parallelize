@@ -7,6 +7,8 @@ import pdb
 
 import time
 
+os.makedirs(os.path.join("logs"),exist_ok=True)
+
 blocking=False
 
 
