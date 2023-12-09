@@ -2,12 +2,10 @@ def warn(*args, **kwargs):
     pass
 import warnings
 warnings.warn = warn
-from joblib import Parallel,delayed, parallel_config
-from ray.util.joblib import register_ray  
-register_ray() 
+from joblib import Parallel,delayed
 
-from sklearnex import patch_sklearn
-patch_sklearn()
+# from sklearnex import patch_sklearn
+# patch_sklearn()
 
 from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score,chromosome_selection,data_chromosome_subset
 from src.genetic_operations import generate_population
@@ -15,8 +13,6 @@ from src.utils import load_dataset,select_model,csv_writer_util
 
 import xgboost as xgb
 from sklearn.feature_selection import SequentialFeatureSelector
-import csv
-import datetime
 
 import argparse
 import numpy as np
@@ -26,27 +22,20 @@ import random
 import os
 from datetime import datetime
 from time import time
-#######spark#######
-import findspark
-
-findspark.init()
-from pyspark import SparkContext
-###################
 
 random.seed(123)
 np.random.seed(123)
 
 # def main(args):
 
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Genetic Algorithm Sequential',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    # parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
-    #                     help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
-    
-    parser.add_argument('--dataset', default="AP_Colon_Kidney",
-                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,...)')
+    parser.add_argument('--dataset', default="SantandereCustomerSatisfaction",
+                        help='Dataset Name (SantandereCustomerSatisfaction,IMDB.drama,gina_agnostic,hiva_agnostic,sylva_agnostic)')
 
     parser.add_argument('--crossover_choice', type=str,default='onepoint',
                         help='Crossover options for chromosomes (onepoint,multipoint)')
@@ -74,9 +63,8 @@ if __name__ == "__main__":
     parser.add_argument('--algorithm', type=str, default="ga_joblib",
                         help='Type of algorithm for feature selection (ga,rfs,random)')
 
-    parser.add_argument('--backend_prefer',type=str,default="processes",help="backend for joblib (loky,threading)")
-    
-    parser.add_argument('--N',type=int, default=20,help="Number of Partitions for spark job")
+    parser.add_argument('--backend_prefer',type=str,default="processes",help="backend preference for joblib  ('processes','threads') IGNORE -> (loky,threading)")
+
 
 
     args = parser.parse_args()
@@ -98,6 +86,7 @@ if __name__ == "__main__":
     print("= "*10,"Dataset Description"," ="*10)
     X_tr,X_val,X_te,y_tr,y_val,y_te = load_dataset(args.dataset)
     N,n_genes = X_tr.shape
+
     print("Dataset Train Shape: ",X_tr.shape)
     print("Dataset Val Shape: ",X_tr.shape)
     print("Dataset Test Shape: ",X_te.shape)
@@ -176,12 +165,7 @@ if __name__ == "__main__":
 
             n_chromosomes, n_genes = population.shape
 
-            #,prefer='threads'  args.backend_prefer
-            # with parallel_config(backend="loky", n_jobs=-2, max_nbytes=100):
-            #     scores = Parallel()(
-            #     delayed(fitness_score)(X_tr, y_tr, X_te, y_te, population[[n], :], LogisticRegression, metric, n_jobs=-1) for n in range(n_chromosomes))
-            
-            #,prefer='threads'
+            # prefer='threads'
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
                 delayed(fitness_score)(X_tr, y_tr, X_val, y_val, population[[n], :], model, metric) for n in range(n_chromosomes))
 
@@ -196,56 +180,10 @@ if __name__ == "__main__":
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
             csv_writer_util(filename, evo, total_time, scores, best_chromosome)
+
+
             evo += 1
 
-    elif args.algorithm == "spark_ga":
-        # Initialize Spark context
-        sc = SparkContext(appName="Parallel Genetic Algorithm with Scikit-Learn")
-        sc.setLogLevel("ERROR")
-        #Since data is large we will broadcast the data to all nodes (one time)
-        broadCast_X_tr = sc.broadcast(X_tr)
-        broadCast_X_te = sc.broadcast(X_te)
-        broadCast_y_tr = sc.broadcast(y_tr)
-        broadCast_y_te = sc.broadcast(y_te)
-        
-        print("Start the spark process")
-        print("Genetic Algorithm Evolution with spark backend")
-        scores = baseline_metric_val
-        evo = 0
-        while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
-            
-            start_time = time()
-
-            n_chromosomes, n_genes = population.shape
-            
-            # main spark code goes here
-            # Parallelize the fitness calculation
-            
-            population_rdd = sc.parallelize(population,args.N)
-            scores = population_rdd.map(lambda chromosome: fitness_score(broadCast_X_tr.value, broadCast_y_tr.value, broadCast_X_te.value, broadCast_y_te.value, 
-                                                                                     chromosome, model, metric)).collect()
-            scores = np.array(scores)
-            
-            best_chromosome = population[np.argmax(scores)]
-            
-            population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
-            end_time = time()
-            total_time = end_time-start_time
-
-            print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
-            
-            csv_writer_util(filename, evo, total_time, scores, best_chromosome)
-            evo += 1
-            
-        #Memory Management 
-        broadCast_X_tr.unpersist()
-        broadCast_X_te.unpersist()
-        broadCast_y_tr.unpersist()
-        broadCast_y_te.unpersist()
-        
-        # End spark context
-        sc.stop()
-        
     elif args.algorithm == "random":
         print("Random Feature Evolution")
         scores = baseline_metric_val
