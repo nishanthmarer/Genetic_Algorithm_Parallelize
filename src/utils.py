@@ -10,7 +10,7 @@ import numpy as np
 import os
 
 import pandas as pd
-def load_dataset(dataset):
+def load_dataset(dataset,test_size=0.1):
     os.makedirs("dataset_cache", exist_ok=True)
     label_encoder = LabelEncoder()
 
@@ -35,14 +35,17 @@ def load_dataset(dataset):
         X = X.values.astype(float); y=label_encoder.fit_transform(y).astype(float)
     print("Dataset Shape: ",X.shape)
 
-    X_tr,X_te,y_tr,y_te = train_test_split(X,y,test_size=0.2,stratify=y,random_state=123)
+    val_size = 0.2/(1-test_size)
+    X_tr,X_te,y_tr,y_te = train_test_split(X,y,test_size=test_size,stratify=y,random_state=123)
+    X_tr,X_val,y_tr,y_val = train_test_split(X_tr,y_tr,test_size=val_size,stratify=y_tr,random_state=123)
 
     std_scaler = StandardScaler()
 
     X_tr = std_scaler.fit_transform(X_tr)
-    X_te = std_scaler.transform((X_te))
+    X_val= std_scaler.transform(X_val)
+    X_te = std_scaler.transform(X_te)
 
-    return X_tr,X_te,y_tr,y_te
+    return X_tr,X_val,X_te,y_tr,y_val,y_te
 
 def select_model(model):
     if model == "logistic":

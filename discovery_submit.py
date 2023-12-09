@@ -19,21 +19,21 @@ crossovers = ["onepoint"]
 population_sizes = [50,250,500]
 elitisms = [2]
 mutations = [0.2]
-evolution_rounds = [100,500]
+evolution_rounds = [50]
 backends = ["processes","threads"]
 stopping_thresholds = [0.99]
 
 if __name__ == "__main__":
-    for model in models:
-        for data in datasets:
-            for algo in algorithms:
-                for metric in metrics:
-                    for cross in crossovers:
-                        for mut in mutations:
-                            for popsize in population_sizes:
-                                for elit in elitisms:
-                                    for evos in evolution_rounds:
-                                        for back in backends:
+    for back in backends:
+        for popsize in population_sizes:
+            for model in models:
+                for data in datasets:
+                    for algo in algorithms:
+                        for metric in metrics:
+                            for cross in crossovers:
+                                for mut in mutations:
+                                    for elit in elitisms:
+                                        for evos in evolution_rounds:
                                             for stopping_threshold in stopping_thresholds:
 
                                                 file = f"--population_size={popsize} "\
