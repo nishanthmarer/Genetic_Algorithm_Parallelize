@@ -69,6 +69,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # create the filename and folder structure
     os.makedirs(os.path.join("results"),exist_ok=True)
     results_path = os.path.join("results")
 
@@ -76,9 +77,9 @@ if __name__ == "__main__":
     experiment_time = now.strftime("%d.%m.%Y_%H.%M.%S.%f")
     os.makedirs(os.path.join(os.path.join(results_path,experiment_time)),exist_ok=True)
 
-    filename = os.path.join(results_path, experiment_time, "benchmark.csv")
-
     config_df = pd.DataFrame({k:[v] for k,v in args.__dict__.items()}).to_csv(os.path.join(results_path, experiment_time,"config.csv"),index=False)
+
+    filename = os.path.join(results_path, experiment_time, "benchmark.csv")
 
 
     # main(args)
