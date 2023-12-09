@@ -5,6 +5,7 @@ import numpy as np
 from subprocess import Popen
 import pdb
 
+import time
 
 blocking=False
 
@@ -20,6 +21,7 @@ elitisms = [2]
 mutations = [0.2]
 evolution_rounds = [100,500]
 backends = ["processes","threads"]
+stopping_thresholds = [0.99]
 
 if __name__ == "__main__":
     for model in models:
@@ -32,25 +34,28 @@ if __name__ == "__main__":
                                 for elit in elitisms:
                                     for evos in evolution_rounds:
                                         for back in backends:
+                                            for stopping_threshold in stopping_thresholds:
 
+                                                file = f"--population_size={popsize} "\
+                                                f"--evolution_rounds={evos} "\
+                                                f"--crossover_choice={cross} "\
+                                                f"--metric_choice={metric} "\
+                                                f"--elitism={elit} "\
+                                                f"--dataset={data} "\
+                                                f"--algorithm={algo} "\
+                                                f"--model={model} "\
+                                                f"--backend_prefer={back} "\
+                                                f"--mutation_rate={mut} "\
+                                                f"--stopping_threshold={stopping_threshold}"
 
-                                            file = f"--population_size={popsize} "\
-                                            f"--evolution_rounds={evos} "\
-                                            f"--crossover_choice={cross} "\
-                                            f"--metric_choice={metric} "\
-                                            f"--elitism={elit} "\
-                                            f"--dataset={data} "\
-                                            f"--algorithm={algo} "\
-                                            f"--model={model} "\
-                                            f"--backend_prefer={back} "\
-                                            f"--mutation_rate={mut} "
+                                                # print(file)
+                                                if blocking:
+                                                    file_full = f"python ga_fs.py {file}"
+                                                    print(f'Running: {file_full}')
+                                                    os.system(file_full)
+                                                else:
+                                                    file_full = f"python ga_fs.py {file}"
+                                                    print(f"Running: sbatch execute.bash '{file_full}'")
+                                                    Popen(f"sbatch execute.bash '{file_full}'",shell=True)
 
-                                            # print(file)
-                                            if blocking:
-                                                file_full = f"python ga_fs.py {file}"
-                                                print(f'Running: {file_full}')
-                                                os.system(file_full)
-                                            else:
-                                                file_full = f"python ga_fs.py {file}"
-                                                print(f"Running: sbatch execute.bash '{file_full}'")
-                                                Popen(f"sbatch execute.bash '{file_full}'",shell=True)
+                                                time.sleep(0.01)

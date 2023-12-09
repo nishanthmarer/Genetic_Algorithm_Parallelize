@@ -9,7 +9,7 @@ from joblib import Parallel,delayed
 
 from src.genetic_selection import fitness_population,select_metric,generate_next_population,fitness_score,chromosome_selection
 from src.genetic_operations import generate_population
-from src.utils import load_dataset,select_model
+from src.utils import load_dataset,select_model,csv_writer_util
 
 import xgboost as xgb
 from sklearn.feature_selection import SequentialFeatureSelector
@@ -69,11 +69,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    os.makedirs('./results',exist_ok=True)
-    results_path = os.path.join('./results')
+    os.makedirs(os.path.join("results"),exist_ok=True)
+    results_path = os.path.join("results")
 
     now = datetime.now()
-    dt_string = now.strftime("%d.%m.%Y_%H.%M.%S")
+    experiment_time = now.strftime("%d.%m.%Y_%H.%M.%S.%f")
+    os.makedirs(os.path.join(os.path.join(results_path,experiment_time)),exist_ok=True)
+
+    filename = os.path.join(results_path, experiment_time, "benchmark.csv")
+
+    config_df = pd.DataFrame({k:[v] for k,v in args.__dict__.items()}).to_csv(os.path.join(results_path, experiment_time,"config.csv"),index=False)
+
 
     # main(args)
     X_tr,X_te,y_tr,y_te = load_dataset(args.dataset)
@@ -123,15 +129,7 @@ if __name__ == "__main__":
 
         evo = 0
 
-        if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
-            data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(sfs_metric)], 'Best': [np.max(sfs_metric)], 'Worst': [np.min(sfs_metric)], 'Best Chromosome': [best_chromosome]})
-            data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
-        else:
-            columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
-            result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(sfs_metric)], 'Best': [np.max(sfs_metric)], 'Worst': [np.min(sfs_metric)], 'Best Chromosome': [best_chromosome]})
-            data = pd.concat((columns,result))
-            data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
-
+        csv_writer_util(filename, evo, total_time, sfs_metric, best_chromosome)
 
     elif args.algorithm == "ga_seq":
         print("Genetic Algorithm Evolution")
@@ -150,14 +148,8 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
-                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
-            else:
-                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
-                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+            csv_writer_util(filename, evo, total_time, scores, best_chromosome)
+
 
             
             evo += 1
@@ -186,14 +178,8 @@ if __name__ == "__main__":
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
             
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
-                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
-            else:
-                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
-                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+            csv_writer_util(filename, evo, total_time, scores, best_chromosome)
+
 
             evo += 1
 
@@ -214,15 +200,8 @@ if __name__ == "__main__":
             total_time = end_time-start_time
 
             print("Generation {:3d} \t Population Size={} \t Score={:.3f} \t time={:2f}s".format(evo,population.shape,np.max(scores),total_time))
-    
-            if os.path.isfile(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv'):
-                data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='a', header=False, index=False)
-            else:
-                columns = pd.DataFrame(columns = ['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
-                result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)], 'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
-                data = pd.concat((columns,result))
-                data.to_csv(f'{results_path}/{args.algorithm}-{args.model}-{args.dataset}-{args.metric_choice}-{dt_string}.csv', mode='x', header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
+
+            csv_writer_util(filename, evo, total_time, scores, best_chromosome)
 
             evo += 1
     

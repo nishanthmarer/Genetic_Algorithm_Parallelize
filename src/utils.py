@@ -5,6 +5,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
 
+import numpy as np
+
 import os
 
 import pandas as pd
@@ -51,3 +53,15 @@ def select_model(model):
         clf = XGBClassifier
 
     return clf
+
+def csv_writer_util(filename,evo,total_time,scores,best_chromosome):
+    if os.path.isfile(filename):
+        data = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)],
+                             'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+        data.to_csv(filename, mode='a', header=False, index=False)
+    else:
+        columns = pd.DataFrame(columns=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'])
+        result = pd.DataFrame({'Gen': [evo], 'Time': [total_time], 'Avg': [np.mean(scores)], 'Best': [np.max(scores)],
+                               'Worst': [np.min(scores)], 'Best Chromosome': [best_chromosome]})
+        data = pd.concat((columns, result))
+        data.to_csv(filename, header=['Gen', 'Time', 'Avg', 'Best', 'Worst', 'Best Chromosome'], index=False)
