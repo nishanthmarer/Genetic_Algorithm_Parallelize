@@ -40,8 +40,8 @@ else:
     elitisms = [2]
     mutations = [0.2]
     evolution_rounds = [150]
-    # backends = ["processes","threads"]
-    backends = ["processes"]
+    backends = ["threads"]
+    # backends = ["processes"]
     stopping_thresholds = [0.99999]
 
 if __name__ == "__main__":
