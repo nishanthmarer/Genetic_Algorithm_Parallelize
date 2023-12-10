@@ -168,8 +168,8 @@ if __name__ == "__main__":
             start_time = time()
 
             n_chromosomes, n_genes = population.shape
-
-            # prefer='threads'
+            
+            #,prefer='threads'
             scores = Parallel(n_jobs=-2,prefer=args.backend_prefer,max_nbytes=100)(
                 delayed(fitness_score)(X_tr, y_tr, X_val, y_val, population[[n], :], model, metric) for n in range(n_chromosomes))
 
@@ -192,9 +192,9 @@ if __name__ == "__main__":
         sc.setLogLevel("ERROR")
         #Since data is large we will broadcast the data to all nodes (one time)
         broadCast_X_tr = sc.broadcast(X_tr)
-        broadCast_X_te = sc.broadcast(X_te)
+        broadCast_X_val = sc.broadcast(X_val)
         broadCast_y_tr = sc.broadcast(y_tr)
-        broadCast_y_te = sc.broadcast(y_te)
+        broadCast_y_val = sc.broadcast(y_val)
         
         print("Start the spark process")
         print("Genetic Algorithm Evolution with spark backend")
@@ -210,7 +210,7 @@ if __name__ == "__main__":
             # Parallelize the fitness calculation
             
             population_rdd = sc.parallelize(population,args.N)
-            scores = population_rdd.map(lambda chromosome: fitness_score(broadCast_X_tr.value, broadCast_y_tr.value, broadCast_X_te.value, broadCast_y_te.value, 
+            scores = population_rdd.map(lambda chromosome: fitness_score(broadCast_X_tr.value, broadCast_y_tr.value, broadCast_X_val.value, broadCast_y_val.value, 
                                                                                      chromosome, model, metric)).collect()
             scores = np.array(scores)
             
@@ -227,9 +227,9 @@ if __name__ == "__main__":
             
         #Memory Management 
         broadCast_X_tr.unpersist()
-        broadCast_X_te.unpersist()
+        broadCast_X_val.unpersist()
         broadCast_y_tr.unpersist()
-        broadCast_y_te.unpersist()
+        broadCast_y_val.unpersist()
         
         # End spark context
         sc.stop()
@@ -279,3 +279,5 @@ if __name__ == "__main__":
     print("Accuracy: {:.4f} \t F1: {:.4f} \t ROC-AUC: {:.4f}".format(test_accuracy,test_f1,test_roc_auc))
     print("Best Chromosome: ",best_chromosome)
     pd.DataFrame({"F1":[test_f1],"Accuracy":[test_accuracy],"ROC AUC":[test_roc_auc],"Best Chromosome":[best_chromosome]}).to_csv(test_filename,index=False)
+    
+"""End of File"""
