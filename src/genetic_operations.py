@@ -1,7 +1,11 @@
 import numpy as np
+import random
 import pandas as pd
 import itertools
 from iteration_utilities import random_combination
+
+random.seed(123)
+np.random.seed(123)
 
 def generate_population(n_chromosomes,n_genes):
     """
