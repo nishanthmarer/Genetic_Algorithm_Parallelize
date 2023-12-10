@@ -16,7 +16,11 @@ from sklearn.metrics import f1_score,accuracy_score,roc_auc_score
 from joblib import Parallel,delayed
 
 import numpy as np
+import random
 from tqdm import tqdm
+
+random.seed(123)
+np.random.seed(123)
 
 def data_chromosome_subset(X,chromosome):
     """

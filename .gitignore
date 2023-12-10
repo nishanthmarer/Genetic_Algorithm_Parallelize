@@ -10,3 +10,5 @@
 /dataset_cache/
 /results/
 /logs/
+/logs_backup/
+/results_backup/

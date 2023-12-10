@@ -6,10 +6,14 @@ from sklearn.neural_network import MLPClassifier
 from xgboost import XGBClassifier
 
 import numpy as np
+import random
 
 import os
 
 import pandas as pd
+
+random.seed(123)
+np.random.seed(123)
 
 def load_dataset(dataset,test_size=0.1):
     os.makedirs("dataset_cache", exist_ok=True)

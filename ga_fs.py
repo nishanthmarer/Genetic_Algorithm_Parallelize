@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     print("= "*10,"Dataset Description"," ="*10)
     X_tr,X_val,X_te,y_tr,y_val,y_te = load_dataset(args.dataset)
-    N,n_genes = X_tr.shape
+    N_size,n_genes = X_tr.shape
 
     print("Dataset Train Shape: ",X_tr.shape)
     print("Dataset Val Shape: ",X_tr.shape)
@@ -96,8 +96,8 @@ if __name__ == "__main__":
 
     population = generate_population(args.population_size,n_genes)
     start_time = time()
-    model = select_model(args.model) # LogisticRegression(n_jobs=-2,random_state=123)
-    clf = model(random_state=123) #xgb.XGBClassifier(random_state=123)
+    model = select_model(args.model)
+    clf = model(random_state=123)
 
     clf.fit(X_tr,y_tr)
     y_pr_te = clf.predict(X_te)
@@ -106,15 +106,22 @@ if __name__ == "__main__":
     baseline_metric_val = metric(y_val,y_pr_val)
     baseline_metric_test = metric(y_te,y_pr_te)
     end_time = time()
+    total_time = end_time - start_time
 
     print("= "*10,"All Features Baseline Fit"," ="*10)
     print("Baseline Fit Scores: Val {:.4f} \t Test {:.4f}".format(baseline_metric_val,baseline_metric_test))
-    print("Time to complete={:.3f}".format(end_time-start_time))
+    print("Time to complete={:.3f}".format(total_time))
     print()
 
     print("= "*10,args.algorithm," ="*10)
 
-    if args.algorithm == "rfs":
+    if args.algorithm == "baseline_metrics":
+        best_chromosome = np.ones(n_genes).astype(int)
+        evo = 0
+
+        csv_writer_util(filename, evo, total_time, baseline_metric_val, best_chromosome)
+
+    elif args.algorithm == "rfs":
         start_time = time()
         clf = model(random_state=123)
         sfs = SequentialFeatureSelector(clf,n_jobs=-2)
