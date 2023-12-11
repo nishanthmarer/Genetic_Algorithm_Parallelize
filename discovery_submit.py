@@ -32,16 +32,19 @@ if test_run:
 
 else:
     models = ["logistic","mlp","xgboost"]
+    # models = ["mlp"]
     datasets = ["gina_agnostic","hiva_agnostic","sylva_agnostic"]
+    # datasets = ["gina_agnostic","hiva_agnostic"]
     algorithms = ["baseline_metrics","ga_seq","ga_joblib","random","rfs","ga_spark"]
+    # algorithms = ["ga_spark"]
     metrics = ["f1"]
     crossovers = ["onepoint"]
     population_sizes = [150]
     elitisms = [2]
     mutations = [0.2]
     evolution_rounds = [150]
-    backends = ["threads"]
-    # backends = ["processes"]
+    # backends = ["threads"]
+    backends = ["processes"]
     stopping_thresholds = [0.99999]
 
 if __name__ == "__main__":

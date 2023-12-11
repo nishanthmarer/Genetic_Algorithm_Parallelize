@@ -230,9 +230,9 @@ if __name__ == "__main__":
         sc.setLogLevel("ERROR")
         #Since data is large we will broadcast the data to all nodes (one time)
         broadCast_X_tr = sc.broadcast(X_tr)
-        broadCast_X_te = sc.broadcast(X_te)
+        broadCast_X_val = sc.broadcast(X_val)
         broadCast_y_tr = sc.broadcast(y_tr)
-        broadCast_y_te = sc.broadcast(y_te)
+        broadCast_y_val = sc.broadcast(y_val)
         
         print("Start the spark process")
         print("Genetic Algorithm Evolution with spark backend")
@@ -248,7 +248,7 @@ if __name__ == "__main__":
             # Parallelize the fitness calculation
             
             population_rdd = sc.parallelize(population,N)
-            scores = population_rdd.map(lambda chromosome: fitness_score(broadCast_X_tr.value, broadCast_y_tr.value, broadCast_X_te.value, broadCast_y_te.value, 
+            scores = population_rdd.map(lambda chromosome: fitness_score(broadCast_X_tr.value, broadCast_y_tr.value, broadCast_X_val.value, broadCast_y_val.value, 
                                                                                      chromosome, model, metric)).collect()
             scores = np.array(scores)
             
@@ -265,9 +265,9 @@ if __name__ == "__main__":
             
         #Memory Management 
         broadCast_X_tr.unpersist()
-        broadCast_X_te.unpersist()
+        broadCast_X_val.unpersist()
         broadCast_y_tr.unpersist()
-        broadCast_y_te.unpersist()
+        broadCast_y_val.unpersist()
         
         # End spark context
         sc.stop()
