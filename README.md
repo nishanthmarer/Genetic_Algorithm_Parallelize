@@ -9,6 +9,5 @@ Where OpenML is compatible with `sklearn.datasets.fetch_openml` to download and 
 
 On the cluser the following commands need to be executed before the project can be run:
 
-1. 'srcourses'
-2. 'ld5645'
-3. 'conda activate /scratch/marerprabhu.n/Env2/FinalProject2/' # Activates virtual environment
+1. 'module load anaconda3/2022.05'
+2. 'conda activate <env>'
