@@ -284,6 +284,7 @@ if __name__ == "__main__":
 
     X_tr_subset = data_chromosome_subset(X_tr,best_chromosome)
     X_te_subset = data_chromosome_subset(X_te,best_chromosome)
+    np.random.seed(123); random.seed(123)
     clf = model(random_state=123)
     clf.fit(X_tr_subset,y_tr)
     y_pr = clf.predict(X_te_subset)
