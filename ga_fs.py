@@ -23,8 +23,7 @@ import os
 from datetime import datetime
 from time import time
 
-random.seed(123)
-np.random.seed(123)
+
 
 # def main(args):
 
@@ -68,6 +67,9 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+    seed = 0
+    random.seed(seed)
+    np.random.seed(seed)
 
     # create the filename and folder structure
     os.makedirs(os.path.join("results"),exist_ok=True)
@@ -83,7 +85,7 @@ if __name__ == "__main__":
     test_filename = os.path.join(results_path,experiment_time,"test_metrics.csv")
 
 
-    print("= "*10,"Dataset Description"," ="*10)
+    print("= "*10,f"{args.dataset} Dataset Description"," ="*10)
     X_tr,X_val,X_te,y_tr,y_val,y_te = load_dataset(args.dataset)
     N_size,n_genes = X_tr.shape
 
@@ -145,12 +147,13 @@ if __name__ == "__main__":
         scores = baseline_metric_val
         evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
-
+            seed += 1
             start_time = time()
             scores = fitness_population(X_tr,y_tr,X_val,y_val,population,model,metric,verbose=False)
 
             best_chromosome = population[np.argmax(scores)]
 
+            np.random.seed(seed); random.seed(seed)
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
             total_time = end_time-start_time
@@ -166,7 +169,7 @@ if __name__ == "__main__":
         scores = baseline_metric_val
         evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
-
+            seed += 1
             start_time = time()
 
             n_chromosomes, n_genes = population.shape
@@ -178,7 +181,7 @@ if __name__ == "__main__":
             scores = np.array(scores)
 
             best_chromosome = population[np.argmax(scores)]
-
+            np.random.seed(seed); random.seed(seed)
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
             total_time = end_time-start_time
@@ -196,7 +199,7 @@ if __name__ == "__main__":
         evo = 0
         best_score = 0; best_chromosome = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
-
+            seed += 1
             start_time = time()
             population = generate_population(args.population_size, n_genes)
             scores = fitness_population(X_tr,y_tr,X_val,y_val,
@@ -239,7 +242,8 @@ if __name__ == "__main__":
         scores = baseline_metric_val
         evo = 0
         while np.max(scores) < args.stopping_threshold and evo <= args.evolution_rounds:
-            
+            seed += 1
+
             start_time = time()
 
             n_chromosomes, n_genes = population.shape
@@ -253,7 +257,7 @@ if __name__ == "__main__":
             scores = np.array(scores)
             
             best_chromosome = population[np.argmax(scores)]
-            
+            np.random.seed(seed); random.seed(seed)
             population = generate_next_population(scores,population,crossover_method=args.crossover_choice,mutation_rate=args.mutation_rate,elitism=args.elitism)
             end_time = time()
             total_time = end_time-start_time
