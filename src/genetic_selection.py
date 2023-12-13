@@ -41,6 +41,7 @@ def fitness_score(X_tr,y_tr,X_te,y_te,chromosome,model,metric):
     :param model: scikit learn metric that accepts (y_true,y_predicted)
     :return:
     """
+    np.random.seed(123); random.seed(123)
     # reshape chromosome incase it has wrong dimension...
     X_tr_subset = data_chromosome_subset(X_tr,chromosome)
     X_te_subset = data_chromosome_subset(X_te,chromosome)
